@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#f6f7f9" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#111317" media="(prefers-color-scheme: dark)">
-  <meta name="description" content="シンプルな家計簿。Muse(AIエージェント)からURLやテキストで記帳できます。">
+  <meta name="description" content="シンプルな家計簿。カード明細PDFの読み込み・自動仕分け、Muse(AIエージェント)からの記帳に対応。">
   <title>Kakei 家計簿</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -22,28 +22,39 @@
     <!-- ホーム -->
     <section id="view-home" class="view" aria-label="ホーム">
       <div class="card hero">
-        <p class="muted small">今月の残り予算</p>
-        <p class="big" id="remaining">¥0</p>
+        <p class="muted small" id="heroLabel">今月の支出</p>
+        <p class="big" id="heroValue">¥0</p>
+        <p class="compare" id="compare"></p>
         <div class="progress" role="progressbar" aria-label="予算の使用率" aria-valuemin="0" aria-valuemax="100" id="budgetBar"><span></span></div>
         <p class="muted small" id="budgetNote"></p>
         <div class="stats">
           <div><p class="muted small">支出</p><p class="num expense" id="sumExpense">¥0</p></div>
           <div><p class="muted small">収入</p><p class="num income" id="sumIncome">¥0</p></div>
+          <div><p class="muted small">投資</p><p class="num invest" id="sumInvest">¥0</p></div>
           <div><p class="muted small">収支</p><p class="num" id="sumBalance">¥0</p></div>
         </div>
+      </div>
+
+      <div class="card">
+        <div class="row-between"><h2>支出の推移</h2><span class="small muted">棒をタップでその月へ</span></div>
+        <div class="trend" id="trend" role="list"></div>
       </div>
 
       <form class="card quick" id="quickForm" autocomplete="off">
         <label for="quickInput" class="small muted">ひとことで記帳(例: ランチ 850 / 給料 250000)</label>
         <div class="quick-row">
-          <input id="quickInput" name="q" type="text" inputmode="text" placeholder="ランチ 850" aria-describedby="quickHint">
+          <input id="quickInput" name="q" type="text" placeholder="ランチ 850" aria-describedby="quickHint">
           <button class="btn primary" type="submit">追加</button>
         </div>
         <p id="quickHint" class="small muted"></p>
+        <label class="btn pdf-btn">
+          <span aria-hidden="true">📄</span> カード明細PDFを読み込む
+          <input type="file" class="pdfFile" accept="application/pdf,.pdf" hidden>
+        </label>
       </form>
 
       <div class="card">
-        <h2>カテゴリ別の支出</h2>
+        <div class="row-between"><h2>部類別の支出</h2><span class="small muted" id="breakdownPrev">先月との比較</span></div>
         <div id="breakdown"></div>
       </div>
 
@@ -56,7 +67,7 @@
     <!-- 履歴 -->
     <section id="view-history" class="view" hidden aria-label="履歴">
       <div class="card">
-        <input id="search" type="search" placeholder="メモ・カテゴリで検索" aria-label="検索">
+        <input id="search" type="search" placeholder="店名・メモ・部類で検索" aria-label="検索">
         <div class="seg" role="tablist" aria-label="種類で絞り込み" id="historyFilter">
           <button role="tab" data-f="all" aria-selected="true">すべて</button>
           <button role="tab" data-f="expense" aria-selected="false">支出</button>
@@ -66,7 +77,7 @@
       <div id="historyGroups"></div>
     </section>
 
-    <!-- 設定・Muse連携 -->
+    <!-- 設定 -->
     <section id="view-settings" class="view" hidden aria-label="設定">
       <div class="card">
         <h2>月の予算</h2>
@@ -74,12 +85,36 @@
           <input id="budgetInput" type="number" inputmode="numeric" min="0" step="1000" placeholder="150000" aria-label="月の予算(円)">
           <button class="btn" type="submit">保存</button>
         </form>
+        <p class="small muted mt">投資の部類は予算・支出に含めずに集計します。</p>
+      </div>
+
+      <div class="card">
+        <div class="row-between"><h2>部類</h2><button class="link" id="addCat">＋ 追加</button></div>
+        <div class="seg" role="tablist" aria-label="部類の種類" id="catTypeSeg">
+          <button role="tab" data-t="expense" aria-selected="true">支出</button>
+          <button role="tab" data-t="income" aria-selected="false">収入</button>
+        </div>
+        <ul class="cat-list" id="catList"></ul>
+        <details id="rulesBox">
+          <summary>覚えた仕分け <span id="rulesCount" class="muted"></span></summary>
+          <p class="small muted">取り込み時や編集時に部類を変えたお店は、次回から自動でその部類に仕分けます。</p>
+          <ul class="rule-list" id="ruleList"></ul>
+        </details>
+      </div>
+
+      <div class="card">
+        <h2>カード明細の読み込み</h2>
+        <p class="small muted">カード会社の「ご利用代金明細書」PDFを読み込み、部類ごとに自動で仕分けます。PDFはこの端末の中だけで処理され、外部には送信されません。</p>
+        <label class="btn pdf-btn mt">
+          <span aria-hidden="true">📄</span> PDFを選ぶ
+          <input type="file" class="pdfFile" accept="application/pdf,.pdf" hidden>
+        </label>
       </div>
 
       <div class="card muse">
         <h2>Muse 連携</h2>
         <p class="small muted">Muse にこのページを開かせるか、下のボタンで内容をコピーして Muse に渡します。</p>
-        <div class="stack">
+        <div class="stack mt">
           <button class="btn" id="copySummary">今月のまとめを Muse 用にコピー</button>
           <button class="btn" id="copyGuide">Muse への指示文をコピー</button>
         </div>
@@ -99,12 +134,12 @@
       <div class="card">
         <h2>データ</h2>
         <div class="stack">
-          <button class="btn" id="exportJson">JSON で書き出す</button>
+          <button class="btn" id="exportJson">JSON で書き出す(バックアップ)</button>
           <button class="btn" id="exportCsv">CSV で書き出す</button>
-          <label class="btn file">JSON を読み込む<input type="file" id="importFile" accept="application/json,.json" hidden></label>
+          <label class="btn">JSON を読み込む<input type="file" id="importFile" accept="application/json,.json" hidden></label>
           <button class="btn danger" id="resetAll">すべてのデータを削除</button>
         </div>
-        <p class="small muted">データはこの端末のブラウザ内だけに保存されます。</p>
+        <p class="small muted mt">データはこの端末のブラウザ内だけに保存されます。</p>
       </div>
     </section>
   </main>
@@ -130,12 +165,13 @@
       </div>
       <label class="amount">
         <span aria-hidden="true">¥</span>
-        <input id="amount" name="amount" type="number" inputmode="numeric" min="1" step="1" required placeholder="0" aria-label="金額">
+        <input id="amount" name="amount" type="number" inputmode="numeric" step="1" required placeholder="0" aria-label="金額" aria-describedby="amountHint">
       </label>
-      <div class="chips" id="catChips" role="radiogroup" aria-label="カテゴリ"></div>
+      <p class="small muted" id="amountHint">返金はマイナスで入力できます</p>
+      <div class="chips" id="catChips" role="radiogroup" aria-label="部類"></div>
       <div class="two">
         <label class="field"><span class="small muted">日付</span><input id="date" type="date" required></label>
-        <label class="field"><span class="small muted">メモ</span><input id="memo" type="text" maxlength="60" placeholder="任意"></label>
+        <label class="field"><span class="small muted">メモ・店名</span><input id="memo" type="text" maxlength="60" placeholder="任意"></label>
       </div>
       <div class="sheet-actions">
         <button class="btn danger" type="button" id="deleteTx" hidden>削除</button>
@@ -143,6 +179,49 @@
       </div>
     </form>
   </dialog>
+
+  <!-- PDF取り込みの確認 -->
+  <dialog id="importSheet" class="full" aria-labelledby="importTitle">
+    <div class="import-wrap">
+      <div class="import-head">
+        <div class="row-between">
+          <h2 id="importTitle">明細の取り込み</h2>
+          <button class="icon-btn" id="importClose" aria-label="閉じる">✕</button>
+        </div>
+        <p class="small muted" id="importMeta"></p>
+        <p class="verify" id="importVerify"></p>
+        <label class="check small"><input type="checkbox" id="importRefunds" checked> 返金・キャッシュバックも取り込む(支出から差し引き)</label>
+      </div>
+      <div class="import-body" id="importBody"></div>
+      <div class="import-foot">
+        <button class="btn primary grow" id="importDo">取り込む</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- 部類の編集 -->
+  <dialog id="catSheet" aria-labelledby="catTitle">
+    <form method="dialog" id="catForm" class="sheet-body" autocomplete="off">
+      <div class="row-between">
+        <h2 id="catTitle">部類を追加</h2>
+        <button class="icon-btn" value="cancel" formnovalidate aria-label="閉じる">✕</button>
+      </div>
+      <div class="cat-name-row">
+        <label class="field icon-field"><span class="small muted">絵文字</span><input id="catIcon" type="text" maxlength="4" placeholder="📦"></label>
+        <label class="field grow"><span class="small muted">名前</span><input id="catName" type="text" maxlength="12" required placeholder="例: 出張費"></label>
+      </div>
+      <div class="emoji-pick" id="emojiPick" aria-label="絵文字の候補"></div>
+      <label class="field"><span class="small muted">自動仕分けのキーワード(読点・改行区切り。店名やメモに含まれていればこの部類にします)</span>
+        <textarea id="catWords" rows="3" placeholder="例: 出張, ホテル, 新幹線"></textarea></label>
+      <label class="check" id="catInvestRow"><input type="checkbox" id="catInvest"> 投資として集計する(支出・予算に含めない)</label>
+      <div class="sheet-actions">
+        <button class="btn danger" type="button" id="catDelete" hidden>削除</button>
+        <button class="btn primary grow" type="submit" value="save">保存</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="loading" id="loading" hidden role="status"><div class="spinner" aria-hidden="true"></div><span id="loadingMsg">読み込み中…</span></div>
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden>
     <span id="toastMsg"></span><button class="link" id="toastUndo" hidden>元に戻す</button>

@@ -33,7 +33,8 @@ jobs:
       - name: 公開するファイルをまとめる
         run: |
           mkdir _site
-          cp index.html style.css parser.js app.js sw.js manifest.webmanifest icon.svg _site/
+          cp index.html style.css parser.js app.js pdfimport.js sw.js manifest.webmanifest icon.svg _site/
+          cp -r vendor _site/
           touch _site/.nojekyll
 
       - uses: actions/configure-pages@v5

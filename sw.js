@@ -1,6 +1,6 @@
 // オフラインでも開けるようにするための最小限のService Worker
-const CACHE = 'kakei-v1';
-const FILES = ['./', 'index.html', 'style.css', 'parser.js', 'app.js', 'manifest.webmanifest', 'icon.svg'];
+const CACHE = 'kakei-v2';
+const FILES = ['./', 'index.html', 'style.css', 'parser.js', 'app.js', 'pdfimport.js', 'vendor/pdf-lib.min.js', 'vendor/glyphs.js', 'manifest.webmanifest', 'icon.svg'];
 self.addEventListener('install', (e) => e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)).then(() => self.skipWaiting())));
 self.addEventListener('activate', (e) => e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim())));
 self.addEventListener('fetch', (e) => {

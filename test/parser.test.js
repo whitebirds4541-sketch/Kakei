@@ -29,3 +29,24 @@ test('Muse の JSON を取り込める', () => {
 test('複数行テキスト', () => {
   assert.strictEqual(P.parseBulk('- ランチ 850\n- バス 220\n\nメモだけ', now).length, 2);
 });
+
+test('部類: 最も長く一致したキーワード → 業種 → その他', () => {
+  assert.strictEqual(P.guessCategory('expense', 'ローソンチケット'), '娯楽');
+  assert.strictEqual(P.guessCategory('expense', 'ローソン 赤坂'), '食費');
+  assert.strictEqual(P.guessCategory('expense', '謎のお店', { sub: 'スーパーマーケット' }), '食費');
+  assert.strictEqual(P.guessCategory('expense', '謎のお店'), 'その他');
+  assert.strictEqual(P.guessCategory('expense', 'SBI証券 クレカ積立'), 'カード投資');
+});
+test('部類: 覚えた仕分けと追加した部類が優先される', () => {
+  const cats = P.defaultCategories();
+  cats.expense.push({ name: '接待', icon: '🍷', words: ['接待', '会食'] });
+  const opt = { cats, rules: { 'スマートEX': '出張費' } };
+  assert.strictEqual(P.guessCategory('expense', 'スマートEX〔JR東海〕', opt), '出張費');
+  assert.strictEqual(P.parseLine('取引先 会食 8000', now, opt).category, '接待');
+});
+test('店名の整形', () => {
+  assert.strictEqual(P.cleanMerchant('ダイソー 広島県 東広島市'), 'ダイソー');
+  assert.strictEqual(P.cleanMerchant('キッチンオリジン鶴川店 −東京都 町田市'), 'キッチンオリジン鶴川店');
+  assert.strictEqual(P.cleanMerchant('ＦＡＳＴＧＹＭ２４ 東京都 千代田区'), 'FASTGYM24');
+  assert.strictEqual(P.merchantKey('小田急OX 鶴川店'), '小田急OX');
+});

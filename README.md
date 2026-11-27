@@ -14,7 +14,7 @@ npm test         # テキスト解析のテスト
 
 1. GitHub のリポジトリで **Settings → Pages → Build and deployment → Source** を **GitHub Actions** にする(初回のみ)
 2. `main`(または作業ブランチ)に push すると、`.github/workflows/pages.yml` がテスト後に自動公開します。Actions タブから手動実行も可能
-3. 公開先: `https://<ユーザー名>.github.io/<リポジトリ名>/`
+3. 公開先: https://whitebirds4541-sketch.github.io/Kakei/ (リポジトリ名と同じく大文字・小文字を区別します)
 
 すべて相対パスなので、サブパス配下でもそのまま動きます。
 

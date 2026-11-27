@@ -10,6 +10,14 @@ npm start        # http://localhost:8080 で起動(またはフォルダを任�
 npm test         # テキスト解析のテスト
 ```
 
+### GitHub Pages で公開
+
+1. GitHub のリポジトリで **Settings → Pages → Build and deployment → Source** を **GitHub Actions** にする(初回のみ)
+2. `main`(または作業ブランチ)に push すると、`.github/workflows/pages.yml` がテスト後に自動公開します。Actions タブから手動実行も可能
+3. 公開先: `https://<ユーザー名>.github.io/<リポジトリ名>/`
+
+すべて相対パスなので、サブパス配下でもそのまま動きます。
+
 スマホでは「ホーム画面に追加」でアプリのように使えます(PWA・オフライン対応)。
 
 ### 画面
